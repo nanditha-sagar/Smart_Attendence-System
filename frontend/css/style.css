@@ -1,0 +1,84 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f8;
+  margin: 0;
+  padding: 0;
+}
+
+/* Headings */
+h2 {
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* Login Box */
+.login-box {
+  width: 280px;
+  margin: 120px auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+}
+
+/* Inputs */
+input {
+  width: 90%;
+  padding: 8px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+}
+
+/* Buttons */
+button {
+  padding: 8px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Cards */
+.card {
+  display: inline-block;
+  width: 180px;
+  padding: 15px;
+  margin: 10px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+/* Tables */
+table {
+  width: 80%;
+  margin: 20px auto;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+th {
+  background-color: #f0f0f0;
+}
+
+/* Navigation */
+nav {
+  background-color: #ffffff;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}
+
+nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: #333;
+}

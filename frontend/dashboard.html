@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="students.html">Students</a>
+        <a href="reports.html">Reports</a>
+    </nav>
+
+    <h2>Attendance Dashboard</h2>
+
+    <div style="text-align: center;">
+        <div class="card">
+            <b>Total Students</b><br>
+            <span id="total">0</span>
+        </div>
+
+        <div class="card">
+            <b>Present</b><br>
+            <span id="present">0</span>
+        </div>
+
+        <div class="card">
+            <b>Absent</b><br>
+            <span id="absent">0</span>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody id="attendanceTable">
+        </tbody>
+    </table>
+
+    <script src="js/dashboard.js"></script>
+</body>
+
+</html>

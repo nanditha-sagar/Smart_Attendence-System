@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Students List</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="students.html">Students</a>
+        <a href="reports.html">Reports</a>
+    </nav>
+
+    <!-- Page Title -->
+    <h2>Students List</h2>
+
+    <!-- Students Table -->
+    <table id="studentsTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Roll No</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Loaded dynamically by students.js -->
+        </tbody>
+    </table>
+    <script src="js/api.js"></script>
+    <script src="js/students.js"></script>
+</body>
+
+</html>
