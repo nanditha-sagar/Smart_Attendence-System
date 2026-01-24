@@ -1,9 +1,5 @@
-// Base URL of backend (change when backend is ready)
 const BASE_URL = "http://localhost:5000";
 
-/*
-  Generic GET request
-*/
 async function apiGet(endpoint) {
     try {
         const response = await fetch(`${BASE_URL}${endpoint}`);
@@ -17,9 +13,7 @@ async function apiGet(endpoint) {
     }
 }
 
-/*
-  Generic POST request
-*/
+
 async function apiPost(endpoint, data) {
     try {
         const response = await fetch(`${BASE_URL}${endpoint}`, {
