@@ -47,7 +47,6 @@ class Camera:
         cv2.destroyAllWindows()
 
 
-# Run this file directly to test camera
 if __name__ == "__main__":
     cam = Camera()
     cam.show_camera()

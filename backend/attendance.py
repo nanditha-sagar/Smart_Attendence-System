@@ -1,6 +1,5 @@
 from datetime import datetime
 
-# In-memory attendance store (replace with DB later)
 attendance_records = []
 
 
@@ -13,7 +12,6 @@ def mark_attendance(name):
     today = datetime.now().strftime("%Y-%m-%d")
     current_time = datetime.now().strftime("%H:%M:%S")
 
-    # Check if already marked today
     for record in attendance_records:
         if record["name"] == name and record["date"] == today:
             return {
@@ -22,7 +20,6 @@ def mark_attendance(name):
                 "date": today
             }
 
-    # New attendance entry
     record = {
         "name": name,
         "date": today,

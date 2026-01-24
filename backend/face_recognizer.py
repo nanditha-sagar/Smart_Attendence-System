@@ -11,13 +11,11 @@ class FaceRecognizer:
         self.model_path = model_path
         self.recognizer = cv2.face.LBPHFaceRecognizer_create()
 
-        # Load trained model if exists
         if os.path.exists(self.model_path):
             self.recognizer.read(self.model_path)
         else:
             print("⚠️ Trained model not found. Train the model first.")
 
-        # Label → Name mapping (update as per dataset)
         self.label_map = {
             1: "Rahul",
             2: "Anita"
@@ -30,7 +28,6 @@ class FaceRecognizer:
         """
         label, confidence = self.recognizer.predict(face_img)
 
-        # Lower confidence = better match
         if confidence < 70:
             name = self.label_map.get(label, "Unknown")
         else:

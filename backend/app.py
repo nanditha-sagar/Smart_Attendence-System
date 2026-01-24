@@ -2,11 +2,9 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)   # Allow frontend to access backend
+CORS(app)  
 
-# ---------------------------------
-# Dummy Data (Replace with DB later)
-# ---------------------------------
+
 
 students = [
     {"id": 1, "name": "Rahul", "roll": "CS101"},
@@ -18,16 +16,14 @@ attendance_today = [
     {"name": "Anita", "status": "Absent", "time": "--"}
 ]
 
-# ---------------------------------
-# Routes / APIs
-# ---------------------------------
+
 
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Smart Attendance Backend Running"})
 
 
-# 🔹 Login API
+
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json
@@ -40,19 +36,19 @@ def login():
         return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
 
-# 🔹 Get all students (IMPORTANT)
+
 @app.route("/students", methods=["GET"])
 def get_students():
     return jsonify(students)
 
 
-# 🔹 Get today's attendance
+
 @app.route("/attendance/today", methods=["GET"])
 def get_today_attendance():
     return jsonify(attendance_today)
 
 
-# 🔹 Get monthly attendance report
+
 @app.route("/attendance/report/<month>", methods=["GET"])
 def get_report(month):
     report = [
@@ -65,8 +61,6 @@ def get_report(month):
     })
 
 
-# ---------------------------------
-# Run Server
-# ---------------------------------
+
 if __name__ == "__main__":
     app.run(debug=True)

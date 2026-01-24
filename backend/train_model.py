@@ -11,7 +11,6 @@ def load_dataset():
     faces = []
     labels = []
 
-    # Each folder name should be the label number (e.g., 1, 2)
     for user_folder in os.listdir(DATASET_PATH):
         user_path = os.path.join(DATASET_PATH, user_folder)
 
@@ -23,13 +22,11 @@ def load_dataset():
         for image_name in os.listdir(user_path):
             image_path = os.path.join(user_path, image_name)
 
-            # Read image in grayscale
             img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
             if img is None:
                 continue
 
-            # Resize for consistency
             img = cv2.resize(img, (200, 200))
 
             faces.append(img)
