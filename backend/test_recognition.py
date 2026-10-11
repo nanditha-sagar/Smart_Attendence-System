@@ -1,10 +1,22 @@
 import cv2
-from face_detector import FaceDetector
-from face_recognizer import FaceRecognizer
 
-cap = cv2.VideoCapture(0)
+try:
+    from backend.face_detector import FaceDetector
+    from backend.face_recognizer import FaceRecognizer
+    from backend.database.queries import mark_attendance
+except ImportError:
+    from face_detector import FaceDetector
+    from face_recognizer import FaceRecognizer
+    from database.queries import mark_attendance
+
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+if not cap.isOpened():
+    cap = cv2.VideoCapture(0)
+
 detector = FaceDetector()
 recognizer = FaceRecognizer()
+
+print("[INFO] Starting Face Recognition Test. Press 'Q' to quit.")
 
 while True:
     ret, frame = cap.read()
@@ -14,14 +26,22 @@ while True:
     faces = detector.detect_faces(frame)
 
     for (x, y, w, h) in faces:
-        face_img = cv2.cvtColor(frame[y:y+h, x:x+w], cv2.COLOR_BGR2GRAY)
-        face_img = cv2.resize(face_img, (200, 200))
+        face_crop = frame[y:y+h, x:x+w]
+        res = recognizer.recognize_face(face_crop)
 
-        name, confidence = recognizer.recognize_face(face_img)
+        name = res.get("name", "Unknown")
+        conf = res.get("confidence", 0.0)
+        is_rec = res.get("is_recognized", False)
 
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        cv2.putText(frame, f"{name}", (x, y-10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+        color = (0, 255, 0) if is_rec else (0, 0, 255)
+        display_text = f"{name} ({conf})"
+
+        cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
+        cv2.putText(frame, display_text, (x, max(20, y-10)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+
+        if is_rec and res.get("id"):
+            mark_attendance(res["id"])
 
     cv2.imshow("Face Recognition Test", frame)
 

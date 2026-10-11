@@ -1,52 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance - Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
 
-    <nav>
-        <a href="dashboard.html">Dashboard</a>
-        <a href="students.html">Students</a>
-        <a href="reports.html">Reports</a>
-    </nav>
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <span class="brand-icon">📸</span>
+                <span class="brand-title">Smart Attendance</span>
+            </div>
+            <nav class="nav-links">
+                <a href="dashboard.html" class="nav-item active">Dashboard</a>
+                <a href="students.html" class="nav-item">Students</a>
+                <a href="reports.html" class="nav-item">Reports</a>
+            </nav>
+            <div class="user-menu">
+                <span id="currentDateBadge" class="date-badge"></span>
+                <button class="btn btn-sm btn-outline" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </header>
 
-    <h2>Attendance Dashboard</h2>
-
-    <div style="text-align: center;">
-        <div class="card">
-            <b>Total Students</b><br>
-            <span id="total">0</span>
+    <main class="main-container">
+        <div class="page-title-row">
+            <div>
+                <h2>Attendance Dashboard</h2>
+                <p class="subtitle">Live facial recognition monitoring and real-time attendance logs</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline" onclick="loadDashboard()">🔄 Refresh</button>
+            </div>
         </div>
 
-        <div class="card">
-            <b>Present</b><br>
-            <span id="present">0</span>
+        <!-- Metric Stat Cards -->
+        <div class="stats-grid">
+            <div class="metric-card card">
+                <div class="metric-icon blue">👥</div>
+                <div class="metric-info">
+                    <span class="metric-label">Total Students</span>
+                    <h3 id="total" class="metric-value">0</h3>
+                </div>
+            </div>
+
+            <div class="metric-card card">
+                <div class="metric-icon green">✅</div>
+                <div class="metric-info">
+                    <span class="metric-label">Present Today</span>
+                    <h3 id="present" class="metric-value">0</h3>
+                </div>
+            </div>
+
+            <div class="metric-card card">
+                <div class="metric-icon red">❌</div>
+                <div class="metric-info">
+                    <span class="metric-label">Absent Today</span>
+                    <h3 id="absent" class="metric-value">0</h3>
+                </div>
+            </div>
+
+            <div class="metric-card card">
+                <div class="metric-icon purple">📊</div>
+                <div class="metric-info">
+                    <span class="metric-label">Attendance Rate</span>
+                    <h3 id="rate" class="metric-value">0%</h3>
+                </div>
+            </div>
         </div>
 
-        <div class="card">
-            <b>Absent</b><br>
-            <span id="absent">0</span>
+        <!-- Camera & Recognition Section -->
+        <div class="dashboard-split">
+            <div class="panel-card card">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <h3>📹 Live Face Recognition</h3>
+                        <span id="camStatusBadge" class="status-badge badge-idle">Camera Standby</span>
+                    </div>
+                    <div class="panel-controls">
+                        <button id="toggleCamBtn" class="btn btn-primary btn-sm" onclick="toggleCamera()">
+                            Start Scanner
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="retrainModel()">
+                            ⚡ Train Model
+                        </button>
+                    </div>
+                </div>
+
+                <div class="camera-stream-wrapper">
+                    <div id="cameraPlaceholder" class="camera-placeholder">
+                        <div class="cam-icon">📷</div>
+                        <p>Camera scanner is paused</p>
+                        <span class="helper-text">Click "Start Scanner" to activate live face tracking and automatic attendance marking.</span>
+                    </div>
+                    <img id="cameraFeed" class="camera-feed-img" alt="Camera Feed" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Quick Mark & Controls -->
+            <div class="panel-card card">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <h3>⚡ Quick Manual Attendance</h3>
+                    </div>
+                </div>
+                <p class="panel-desc">Manually mark attendance for a student if facial scan is unavailable.</p>
+
+                <div class="manual-form">
+                    <div class="form-group">
+                        <label for="studentSelect">Select Enrolled Student</label>
+                        <select id="studentSelect" class="form-control">
+                            <option value="">-- Choose Student --</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-success btn-block" onclick="manualMarkAttendance()">
+                        ✓ Mark Present Today
+                    </button>
+                </div>
+
+                <div class="system-status-box">
+                    <h4>💡 Quick Tip</h4>
+                    <p>Live camera scanning runs Haar Cascade face detection and LBPH recognition. When an enrolled student is recognized, attendance is logged automatically.</p>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Time</th>
-            </tr>
-        </thead>
-        <tbody id="attendanceTable">
-        </tbody>
-    </table>
+        <!-- Today's Attendance Table -->
+        <div class="panel-card card table-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>📋 Today's Attendance Log</h3>
+                    <p class="panel-desc">Real-time status for all registered students</p>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search by student or roll..." oninput="filterAttendanceTable()">
+                </div>
+            </div>
 
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Roll Number</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Check-in Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTable">
+                        <tr>
+                            <td colspan="7" class="text-center">Loading attendance data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- CRITICAL: api.js MUST be loaded before dashboard.js -->
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
-
 </html>

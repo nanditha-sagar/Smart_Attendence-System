@@ -1,0 +1,8 @@
+# 1. Allow script execution for your session (if needed)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+# 2. Activate the virtual environment
+.\venv\Scripts\Activate.ps1
+
+# 3. Run the application
+python backend/app.py
