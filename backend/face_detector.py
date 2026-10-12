@@ -76,6 +76,69 @@ class FaceDetector:
             cv2.rectangle(frame, (x, y), (x + w, y + h), color, thickness)
         return frame
 
+    def validate_face_image(self, frame):
+        """
+        Validates that exactly one clear face is present in the image.
+        Returns:
+            dict:
+                valid (bool): True if exactly one valid face detected
+                face_count (int): Number of detected faces
+                face_bbox (list): [x, y, w, h] of detected face or None
+                face_crop (np.ndarray): Cropped face region or None
+                message (str): User-friendly descriptive validation message
+        """
+        if frame is None or getattr(frame, "size", 0) == 0:
+            return {
+                "valid": False,
+                "face_count": 0,
+                "face_bbox": None,
+                "face_crop": None,
+                "message": "Invalid or unreadable image file. Please provide a valid JPG, PNG, or WEBP."
+            }
+
+        # Detect with primary parameters
+        faces = self.detect_faces(frame, scale_factor=1.15, min_neighbors=5, min_size=(50, 50))
+
+        # If no face detected, try slightly more permissive parameters for edge lighting
+        if len(faces) == 0:
+            faces = self.detect_faces(frame, scale_factor=1.1, min_neighbors=4, min_size=(40, 40))
+
+        if len(faces) == 0:
+            return {
+                "valid": False,
+                "face_count": 0,
+                "face_bbox": None,
+                "face_crop": None,
+                "message": "No face detected in the photo. Please ensure the face is centered, well-lit, and facing the camera directly."
+            }
+
+        if len(faces) > 1:
+            return {
+                "valid": False,
+                "face_count": len(faces),
+                "face_bbox": [[int(b[0]), int(b[1]), int(b[2]), int(b[3])] for b in faces],
+                "face_crop": None,
+                "message": f"Multiple faces detected ({len(faces)}). Please provide a photo containing only one student."
+            }
+
+        # Exactly 1 face
+        x, y, w, h = faces[0]
+        h_max, w_max = frame.shape[:2]
+        pad = int(min(w, h) * 0.12)
+        x1 = max(0, x - pad)
+        y1 = max(0, y - pad)
+        x2 = min(w_max, x + w + pad)
+        y2 = min(h_max, y + h + pad)
+        face_crop = frame[y1:y2, x1:x2]
+
+        return {
+            "valid": True,
+            "face_count": 1,
+            "face_bbox": [int(x), int(y), int(w), int(h)],
+            "face_crop": face_crop,
+            "message": "Face detected and validated successfully."
+        }
+
 
 if __name__ == "__main__":
     cap = cv2.VideoCapture(0)

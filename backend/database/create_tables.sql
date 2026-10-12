@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS students (
     email TEXT DEFAULT '',
     phone TEXT DEFAULT '',
     department TEXT DEFAULT 'Computer Science',
+    photo_path TEXT DEFAULT '',
+    face_encoding TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

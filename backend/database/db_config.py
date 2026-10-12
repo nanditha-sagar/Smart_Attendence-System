@@ -42,6 +42,8 @@ def init_db():
                 email TEXT DEFAULT '',
                 phone TEXT DEFAULT '',
                 department TEXT DEFAULT 'Computer Science',
+                photo_path TEXT DEFAULT '',
+                face_encoding TEXT DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -56,6 +58,17 @@ def init_db():
                 UNIQUE(student_id, date)
             );
         """)
+
+    # Ensure existing tables have photo_path and face_encoding columns
+    try:
+        cursor.execute("PRAGMA table_info(students)")
+        existing_cols = [col[1] for col in cursor.fetchall()]
+        if "photo_path" not in existing_cols:
+            cursor.execute("ALTER TABLE students ADD COLUMN photo_path TEXT DEFAULT ''")
+        if "face_encoding" not in existing_cols:
+            cursor.execute("ALTER TABLE students ADD COLUMN face_encoding TEXT DEFAULT ''")
+    except Exception:
+        pass
 
     # Seed admin user if not exists
     cursor.execute("SELECT id FROM users WHERE username = 'admin'")

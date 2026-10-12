@@ -706,3 +706,380 @@ code {
   font-size: 0.88em;
   color: var(--primary);
 }
+
+/* ---------------- Admin - Add Student & Face Enrollment ---------------- */
+
+.enrollment-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 28px;
+  margin-bottom: 28px;
+}
+
+.enrollment-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .enrollment-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-subtext {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.field-status {
+  font-size: 0.78rem;
+  margin-top: 4px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.field-status.valid {
+  color: var(--success);
+}
+
+.field-status.invalid {
+  color: var(--danger);
+}
+
+.field-status.info {
+  color: var(--primary);
+}
+
+/* Photo Enrollment Box & Tabs */
+.photo-enroll-card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.photo-tabs {
+  display: flex;
+  background: #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.photo-tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.photo-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.photo-tab-btn.active {
+  background: #ffffff;
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Dropzone */
+.photo-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: var(--radius);
+  padding: 28px 16px;
+  text-align: center;
+  background: #ffffff;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.photo-dropzone:hover, .photo-dropzone.dragover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.dropzone-icon {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.dropzone-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.dropzone-subtext {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Live Webcam Viewport */
+.webcam-viewport-wrapper {
+  background: #0f172a;
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.webcam-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scaleX(-1);
+}
+
+.webcam-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.webcam-face-guide {
+  width: 58%;
+  height: 72%;
+  border: 2px dashed rgba(255, 255, 255, 0.65);
+  border-radius: 50% 50% 46% 46%;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  position: relative;
+  transition: border-color 0.3s ease;
+}
+
+.webcam-face-guide.active {
+  border-color: #10b981;
+  border-style: solid;
+}
+
+.webcam-guide-text {
+  position: absolute;
+  bottom: -28px;
+  width: 100%;
+  text-align: center;
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.webcam-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.camera-alert {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin-top: 10px;
+}
+
+/* Photo Preview & Face Validation */
+.photo-preview-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-top: 14px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.preview-thumbnail-box {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.preview-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-details {
+  flex: 1;
+}
+
+.face-validation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.face-validation-badge.success {
+  background: var(--success-light);
+  color: #065f46;
+}
+
+.face-validation-badge.error {
+  background: var(--danger-light);
+  color: #991b1b;
+}
+
+.face-validation-badge.warning {
+  background: var(--warning-light);
+  color: #92400e;
+}
+
+.face-validation-badge.loading {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.preview-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Student Table Avatar Thumbnail */
+.student-avatar-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  display: block;
+}
+
+.student-avatar-thumb:hover {
+  transform: scale(1.3);
+  z-index: 10;
+}
+
+.student-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.student-badge-pill.enrolled {
+  background: var(--success-light);
+  color: #065f46;
+}
+
+.student-badge-pill.pending {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+
+/* Alert Banner */
+.alert-banner {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+.alert-banner.error {
+  background: var(--danger-light);
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.alert-banner.success {
+  background: var(--success-light);
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.alert-banner.info {
+  background: var(--primary-light);
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+}
+
+/* Spinner */
+.spinner-inline {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

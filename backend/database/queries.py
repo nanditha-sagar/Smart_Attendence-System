@@ -11,11 +11,28 @@ def ensure_initialized():
 
 
 def get_all_students():
-    """Fetches all registered students."""
+    """Fetches all registered students with face enrollment status."""
     ensure_initialized()
     conn = get_db_connection()
     students = conn.execute(
-        "SELECT id, name, roll_number as roll, email, phone, department, created_at FROM students ORDER BY id ASC"
+        """
+        SELECT 
+            id, 
+            name, 
+            roll_number as roll, 
+            email, 
+            phone, 
+            department, 
+            COALESCE(photo_path, '') as photo_path,
+            CASE 
+                WHEN (photo_path IS NOT NULL AND photo_path != '') 
+                     OR (face_encoding IS NOT NULL AND face_encoding != '') 
+                THEN 1 ELSE 0 
+            END as has_face,
+            created_at 
+        FROM students 
+        ORDER BY id ASC
+        """
     ).fetchall()
     conn.close()
     return [dict(s) for s in students]
@@ -26,7 +43,25 @@ def get_student_by_id(student_id):
     ensure_initialized()
     conn = get_db_connection()
     student = conn.execute(
-        "SELECT id, name, roll_number as roll, email, phone, department, created_at FROM students WHERE id = ?",
+        """
+        SELECT 
+            id, 
+            name, 
+            roll_number as roll, 
+            email, 
+            phone, 
+            department, 
+            COALESCE(photo_path, '') as photo_path,
+            COALESCE(face_encoding, '') as face_encoding,
+            CASE 
+                WHEN (photo_path IS NOT NULL AND photo_path != '') 
+                     OR (face_encoding IS NOT NULL AND face_encoding != '') 
+                THEN 1 ELSE 0 
+            END as has_face,
+            created_at 
+        FROM students 
+        WHERE id = ?
+        """,
         (student_id,)
     ).fetchone()
     conn.close()
@@ -45,22 +80,76 @@ def get_student_by_name(name):
     return dict(student) if student else None
 
 
-def add_student(name, roll_number, email="", phone="", department="Computer Science", student_id=None):
-    """Adds a new student to the database."""
+def check_duplicate_student(student_id=None, roll_number=None, exclude_id=None):
+    """
+    Checks if a student with the given student_id or roll_number already exists.
+    Returns:
+        tuple: (is_duplicate: bool, field: str, message: str)
+    """
     ensure_initialized()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if student_id is not None:
+        try:
+            sid_int = int(student_id)
+            query = "SELECT id, name, roll_number FROM students WHERE id = ?"
+            params = [sid_int]
+            if exclude_id is not None:
+                query += " AND id != ?"
+                params.append(exclude_id)
+            row = cursor.execute(query, tuple(params)).fetchone()
+            if row:
+                conn.close()
+                return True, "id", f"Student ID '{sid_int}' is already registered to '{row['name']}'."
+        except (ValueError, TypeError):
+            pass
+
+    if roll_number:
+        clean_roll = str(roll_number).strip()
+        if clean_roll:
+            query = "SELECT id, name, roll_number FROM students WHERE LOWER(roll_number) = LOWER(?)"
+            params = [clean_roll]
+            if exclude_id is not None:
+                query += " AND id != ?"
+                params.append(exclude_id)
+            row = cursor.execute(query, tuple(params)).fetchone()
+            if row:
+                conn.close()
+                return True, "roll", f"Roll Number '{clean_roll}' is already registered to '{row['name']}' (ID: #{row['id']})."
+
+    conn.close()
+    return False, "", ""
+
+
+def add_student(name, roll_number, email="", phone="", department="Computer Science", student_id=None, photo_path="", face_encoding=""):
+    """Adds a new student to the database with optional face photo and encoding."""
+    ensure_initialized()
+
+    # Pre-validate duplicates with friendly error messages
+    is_dup, field, msg = check_duplicate_student(student_id=student_id, roll_number=roll_number)
+    if is_dup:
+        raise ValueError(msg)
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
         if student_id:
             cursor.execute(
-                "INSERT INTO students (id, name, roll_number, email, phone, department) VALUES (?, ?, ?, ?, ?, ?)",
-                (student_id, name, roll_number, email, phone, department)
+                """
+                INSERT INTO students (id, name, roll_number, email, phone, department, photo_path, face_encoding) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (student_id, name, roll_number, email, phone, department, photo_path, face_encoding)
             )
             inserted_id = student_id
         else:
             cursor.execute(
-                "INSERT INTO students (name, roll_number, email, phone, department) VALUES (?, ?, ?, ?, ?)",
-                (name, roll_number, email, phone, department)
+                """
+                INSERT INTO students (name, roll_number, email, phone, department, photo_path, face_encoding) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (name, roll_number, email, phone, department, photo_path, face_encoding)
             )
             inserted_id = cursor.lastrowid
         conn.commit()
@@ -73,7 +162,7 @@ def add_student(name, roll_number, email="", phone="", department="Computer Scie
 
 
 def delete_student(student_id):
-    """Deletes a student and their attendance history."""
+    """Deletes a student and their attendance history, and removes dataset samples."""
     ensure_initialized()
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -82,6 +171,18 @@ def delete_student(student_id):
     deleted = cursor.rowcount > 0
     conn.commit()
     conn.close()
+
+    if deleted:
+        import os
+        import shutil
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dataset_user_dir = os.path.join(base_dir, "datasets", "users", str(student_id))
+        if os.path.exists(dataset_user_dir):
+            try:
+                shutil.rmtree(dataset_user_dir)
+            except Exception:
+                pass
+
     return deleted
 
 

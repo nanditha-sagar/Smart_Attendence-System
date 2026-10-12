@@ -1,14 +1,16 @@
 import os
+import json
 from flask import Flask, jsonify, request, Response, send_from_directory
 from flask_cors import CORS
 
 try:
-    from backend.database.db_config import init_db
+    from backend.database.db_config import init_db, get_db_connection
     from backend.database.queries import (
         get_all_students,
         get_student_by_id,
         add_student,
         delete_student,
+        check_duplicate_student,
         mark_attendance as db_mark_attendance,
         mark_attendance_by_name,
         get_today_attendance,
@@ -20,13 +22,19 @@ try:
     from backend.face_recognizer import FaceRecognizer
     from backend.train_model import train_model
     from backend.camera import Camera, generate_camera_stream
+    from backend.utils.image_utils import (
+        decode_image_bytes,
+        compute_face_encoding,
+        save_student_face_samples
+    )
 except ImportError:
-    from database.db_config import init_db
+    from database.db_config import init_db, get_db_connection
     from database.queries import (
         get_all_students,
         get_student_by_id,
         add_student,
         delete_student,
+        check_duplicate_student,
         mark_attendance as db_mark_attendance,
         mark_attendance_by_name,
         get_today_attendance,
@@ -38,6 +46,11 @@ except ImportError:
     from face_recognizer import FaceRecognizer
     from train_model import train_model
     from camera import Camera, generate_camera_stream
+    from utils.image_utils import (
+        decode_image_bytes,
+        compute_face_encoding,
+        save_student_face_samples
+    )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
@@ -121,55 +134,224 @@ def login():
 
 @app.route("/students", methods=["GET"])
 def list_students():
-    """Returns list of registered students."""
+    """Returns list of registered students with face enrollment status."""
     students = get_all_students()
     return jsonify(students)
 
 
+@app.route("/students/check", methods=["GET"])
+def check_student_availability():
+    """Checks whether a student ID or Roll number is available or already in use."""
+    sid = request.args.get("id") or request.args.get("student_id")
+    roll = request.args.get("roll") or request.args.get("roll_number")
+    exclude = request.args.get("exclude_id")
+
+    sid_int = None
+    if sid and sid.strip().isdigit():
+        sid_int = int(sid.strip())
+
+    exclude_int = None
+    if exclude and exclude.strip().isdigit():
+        exclude_int = int(exclude.strip())
+
+    is_dup, field, msg = check_duplicate_student(
+        student_id=sid_int,
+        roll_number=roll.strip() if roll else None,
+        exclude_id=exclude_int
+    )
+    return jsonify({
+        "available": not is_dup,
+        "is_duplicate": is_dup,
+        "field": field,
+        "message": msg if is_dup else "Available"
+    })
+
+
+@app.route("/students/validate-face", methods=["POST"])
+def validate_face_endpoint():
+    """Validates face in uploaded/captured image for instant client feedback."""
+    img = None
+    if request.files and ("photo" in request.files or "image" in request.files):
+        f = request.files.get("photo") or request.files.get("image")
+        img = decode_image_bytes(f.read())
+    else:
+        data = request.get_json(silent=True) or {}
+        photo_payload = data.get("photo") or data.get("image") or data.get("photo_base64")
+        if photo_payload:
+            img = decode_image_bytes(photo_payload)
+
+    if img is None:
+        return jsonify({"valid": False, "face_count": 0, "message": "No valid image payload provided"}), 400
+
+    det = get_detector()
+    result = det.validate_face_image(img)
+    return jsonify({
+        "valid": result["valid"],
+        "face_count": result["face_count"],
+        "face_bbox": result["face_bbox"],
+        "message": result["message"]
+    }), (200 if result["valid"] else 400)
+
+
 @app.route("/students", methods=["POST"])
 def register_student():
-    """Registers a new student."""
-    data = request.get_json(silent=True) or {}
+    """
+    Registers a new student. Supports details (name, student ID, department/class, roll number)
+    and photo enrollment (upload or webcam capture). Validates face, computes 128-d encoding,
+    saves dataset samples, retrains model, and immediately reloads recognizer.
+    """
+    img = None
+    if request.content_type and "multipart/form-data" in request.content_type:
+        data = request.form.to_dict()
+        photo_file = request.files.get("photo") or request.files.get("image")
+        if photo_file:
+            img = decode_image_bytes(photo_file.read())
+    else:
+        data = request.get_json(silent=True) or {}
+        photo_payload = data.get("photo") or data.get("image") or data.get("photo_base64")
+        if photo_payload:
+            img = decode_image_bytes(photo_payload)
+
     name = data.get("name", "").strip()
-    roll = data.get("roll") or data.get("roll_number", "").strip()
+    roll = (data.get("roll") or data.get("roll_number") or "").strip()
     email = data.get("email", "").strip()
+    phone = data.get("phone", "").strip()
     department = data.get("department", "Computer Science").strip()
-    student_id = data.get("id")
+    student_id_val = data.get("id") or data.get("student_id")
 
-    if not name or not roll:
-        return jsonify({"success": False, "message": "Name and Roll Number are required"}), 400
+    # 1. Input Validation
+    if not name:
+        return jsonify({"success": False, "message": "Full Name is required"}), 400
 
+    parsed_student_id = None
+    if student_id_val is not None and str(student_id_val).strip() != "":
+        try:
+            parsed_student_id = int(str(student_id_val).strip())
+            if parsed_student_id <= 0:
+                return jsonify({"success": False, "message": "Student ID must be a positive integer"}), 400
+        except ValueError:
+            return jsonify({"success": False, "message": "Student ID must be a valid number"}), 400
+
+    if not roll:
+        if parsed_student_id is not None:
+            roll = f"STU{parsed_student_id}"
+        else:
+            return jsonify({"success": False, "message": "Roll Number or Student ID is required"}), 400
+
+    # 2. Duplicate Checks
+    is_dup, dup_field, dup_msg = check_duplicate_student(
+        student_id=parsed_student_id,
+        roll_number=roll
+    )
+    if is_dup:
+        return jsonify({"success": False, "message": dup_msg, "field": dup_field}), 409
+
+    # 3. Face Detection & Validation
+    face_val_res = None
+    face_encoding_str = ""
+    if img is not None:
+        det = get_detector()
+        face_val_res = det.validate_face_image(img)
+        if not face_val_res["valid"]:
+            return jsonify({
+                "success": False,
+                "message": face_val_res["message"],
+                "face_count": face_val_res["face_count"]
+            }), 400
+
+        # Compute 128-d face encoding
+        face_crop = face_val_res["face_crop"]
+        encoding_vec = compute_face_encoding(face_crop)
+        face_encoding_str = json.dumps(encoding_vec)
+
+    # 4. Insert into Database
     try:
         new_id = add_student(
             name=name,
             roll_number=roll,
             email=email,
+            phone=phone,
             department=department,
-            student_id=int(student_id) if student_id else None
+            student_id=parsed_student_id,
+            photo_path="",
+            face_encoding=face_encoding_str
         )
-        # Reload label map in recognizer
+
+        face_enrolled = False
+        photo_path = ""
+
+        # 5. Save Face Samples & Retrain Model if photo was provided
+        if face_val_res and face_val_res["valid"]:
+            sample_info = save_student_face_samples(new_id, face_val_res["face_crop"])
+            photo_path = sample_info["primary_path"]
+
+            # Update student record with saved photo path
+            conn = get_db_connection()
+            conn.execute("UPDATE students SET photo_path = ? WHERE id = ?", (photo_path, new_id))
+            conn.commit()
+            conn.close()
+
+            # Train model immediately so new student is instantly recognized
+            train_model()
+            face_enrolled = True
+
+        # 6. Reload recognizer in memory
         try:
             get_recognizer().reload_model()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[WARNING] Recognizer reload error: {e}")
+
+        success_msg = f"Student '{name}' registered successfully!"
+        if face_enrolled:
+            success_msg += " Face profile generated and active for instant recognition."
 
         return jsonify({
             "success": True,
-            "message": f"Student '{name}' registered successfully",
-            "id": new_id
+            "message": success_msg,
+            "id": new_id,
+            "name": name,
+            "roll": roll,
+            "department": department,
+            "photo_url": f"/students/{new_id}/photo" if face_enrolled else None,
+            "face_enrolled": face_enrolled
         }), 201
+
     except ValueError as e:
         return jsonify({"success": False, "message": str(e)}), 409
     except Exception as e:
         return jsonify({"success": False, "message": f"Server error: {e}"}), 500
 
 
+@app.route("/students/<int:student_id>/photo", methods=["GET"])
+def get_student_photo(student_id):
+    """Serves the student's enrolled face photo or a fallback SVG avatar."""
+    student = get_student_by_id(student_id)
+    if student and student.get("photo_path"):
+        full_path = os.path.join(BASE_DIR, student["photo_path"])
+        if os.path.exists(full_path):
+            return send_from_directory(os.path.dirname(full_path), os.path.basename(full_path), mimetype="image/jpeg")
+
+    # Fallback to datasets/users/<id>/img1.jpg directly
+    direct_path = os.path.join(BASE_DIR, "datasets", "users", str(student_id), "img1.jpg")
+    if os.path.exists(direct_path):
+        return send_from_directory(os.path.dirname(direct_path), os.path.basename(direct_path), mimetype="image/jpeg")
+
+    # Clean SVG fallback avatar
+    initial = (student["name"][0] if student and student.get("name") else "S").upper()
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+        <rect width="120" height="120" rx="24" fill="#4f46e5" />
+        <text x="50%" y="54%" font-family="Arial, sans-serif" font-size="52" font-weight="bold" fill="#ffffff" dominant-baseline="middle" text-anchor="middle">{initial}</text>
+    </svg>"""
+    return Response(svg, mimetype="image/svg+xml")
+
+
 @app.route("/students/<int:student_id>", methods=["DELETE"])
 def remove_student(student_id):
-    """Deletes a student."""
+    """Deletes a student and cleans up model and recognizer."""
     success = delete_student(student_id)
     if success:
         try:
+            train_model()
             get_recognizer().reload_model()
         except Exception:
             pass

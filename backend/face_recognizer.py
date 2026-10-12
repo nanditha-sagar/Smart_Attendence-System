@@ -44,6 +44,7 @@ class FaceRecognizer:
         # 2. Read trained weights
         if os.path.exists(self.model_path) and os.path.getsize(self.model_path) > 0:
             try:
+                self.recognizer = cv2.face.LBPHFaceRecognizer_create()
                 self.recognizer.read(self.model_path)
                 self.is_loaded = True
             except Exception as e:
